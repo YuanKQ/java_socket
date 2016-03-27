@@ -39,7 +39,23 @@ public abstract class SocketTransceiver implements Runnable {
 		this.socket = socket;
 		this.hostIP = hostIP;
 		this.addr = socket.getInetAddress();
-		savePath = new File(Environment.getExternalStoragePublicDirectory( Environment.DIRECTORY_DOWNLOADS), "ndnFile");
+		savePath = buildFileFolder();
+		// = new File(Environment.getExternalStoragePublicDirectory( Environment.DIRECTORY_DOWNLOADS), "ndnFile");
+		onReceive(addr, "***新建文件夹： " + savePath.getPath()); 
+	}
+	
+	private File buildFileFolder() {
+		if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
+			File dir = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/1_socket");
+			
+			if (!dir.exists()) {
+				dir.mkdirs();
+			}
+			
+			return dir;
+		}
+		
+		return null;
 	}
 
 	/**
@@ -176,7 +192,7 @@ public abstract class SocketTransceiver implements Runnable {
 					fileName = fileName.substring(0, fileName.indexOf(".")-1) + "-" + System.currentTimeMillis() + fileName.substring(fileName.indexOf("."));
 					fileRecv = new File(savePath, fileName);
 				}
-				
+				fileRecv.createNewFile();
 				onReceive(addr, "***准备接收文件 " + fileName);  //仅作为界面刷新
 				
 				FileOutputStream fout = new FileOutputStream(fileRecv);
