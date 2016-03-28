@@ -1,12 +1,16 @@
 package com.example.tryagain;
+import java.io.File;
+
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -17,6 +21,7 @@ public class MainActivity extends Activity implements OnClickListener {
 	private ToggleButton bnConnect;
 	private TextView txReceive;
 	private EditText edIP, edPort, edData;
+	private Button bnSendMsg, bnSendFile;
 
 	private Handler handler = new Handler(Looper.getMainLooper());
 
@@ -60,7 +65,10 @@ public class MainActivity extends Activity implements OnClickListener {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 
-		this.findViewById(R.id.bn_send).setOnClickListener(this);
+		bnSendFile = (Button)this.findViewById(R.id.btn_sndFile);
+		bnSendFile.setOnClickListener(this);
+		bnSendMsg = (Button)this.findViewById(R.id.bn_send);
+		bnSendMsg.setOnClickListener(this);
 		bnConnect = (ToggleButton) this.findViewById(R.id.bn_connect);
 		bnConnect.setOnClickListener(this);
 
@@ -90,6 +98,9 @@ public class MainActivity extends Activity implements OnClickListener {
 			break;
 		case R.id.tx_receive:			
 			clear();
+			break;
+		case R.id.btn_sndFile:
+			sendFile();
 			break;
 		}
 	}
@@ -148,6 +159,16 @@ public class MainActivity extends Activity implements OnClickListener {
 			}
 		});
 		
+	}
+	
+	private void sendFile() {
+		try {
+			File file = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/1_socket/fromServer.txt");
+			txReceive.append("<<Preparing to send file in :" + file.getPath());			
+			client.getTransceiver().send(file.getPath(), 1);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}		
 	}
 
 	/**

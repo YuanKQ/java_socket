@@ -3,6 +3,7 @@ package com.example.tryagain;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -10,6 +11,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 import android.os.Environment;
+import android.text.InputFilter.LengthFilter;
+import android.util.Log;
 
 /**
  * Socket收发器 通过Socket发送数据，并使用新线程监听Socket接收到的数据
@@ -27,8 +30,15 @@ public abstract class SocketTransceiver implements Runnable {
 	private boolean runFlag;
     private final File savePath;
 	
-	private final int portSend = 61010;
+    /*******
+	 * 注意端口啊！！！被坑死啦~~~
+	 * PC Server          Android Client
+	 * portSend  ------->  portRecv
+	 * portRecv  <-------  portSend
+	 */
+	private final int portSend = 61001;
 	private final int portRecv = 60000;
+	
 	/**
 	 * 实例化
 	 * 
@@ -41,7 +51,7 @@ public abstract class SocketTransceiver implements Runnable {
 		this.addr = socket.getInetAddress();
 		savePath = buildFileFolder();
 		// = new File(Environment.getExternalStoragePublicDirectory( Environment.DIRECTORY_DOWNLOADS), "ndnFile");
-		onReceive(addr, "***新建文件夹： " + savePath.getPath()); 
+		//onReceive(addr, "***新建文件夹： " + savePath.getPath()); 
 	}
 	
 	private File buildFileFolder() {
@@ -99,19 +109,147 @@ public abstract class SocketTransceiver implements Runnable {
 	 *            字符串
 	 * @return 发送成功返回true
 	 */
-	public boolean send(String s, int type) {
+	public boolean send(final String s, int type) {
 		if (out != null) {
 			try {
 				out.writeInt(type);
-				out.writeUTF(s);
 				out.flush();
+				if (type == 0) {
+					out.writeUTF(s);
+					out.flush();
+				} else {
+					
+					Thread.sleep(100);
+					/*										
+					Socket socketSend = null;
+					DataInputStream din = null;
+					DataOutputStream dout = null;
+					boolean isSend = true;
+					
+					try {
+						socketSend = new Socket(hostIP, portSend);
+						din = new DataInputStream(socketSend.getInputStream());
+						dout = new DataOutputStream(socketSend.getOutputStream());
+					} catch (Exception e) {
+						System.out.println("@Client端的socketSend连接失败 " + e.getMessage());
+						isSend = false;
+					}
+					
+					//发送文件
+					File file = new File(s);
+					String head = "Length=" + file.length() + "; Name=" + file.getName() + "; Path=" + file.getPath() + ";\r\n";
+					dout.writeUTF(head);
+					dout.flush();
+					if (!file.exists()){
+						//此处是writeTest的代码
+						try {
+							file.createNewFile();
+							String content = "Hello world!\n\nThis is a message from Client.\n\nI am happy to connect with you!\n\n*****END*****";
+							byte[] buf = new byte[1024];
+							FileOutputStream fout = new FileOutputStream(file);
+							fout.write(content.getBytes());
+							fout.close();
+						} catch (Exception e) {
+							System.out.println("#Exception in writeTest of Client: " + e.getMessage());
+							
+						}
+					}
+					FileInputStream fin = new FileInputStream(file);
+					
+					byte[] buf = new byte[1024];
+					int num = fin.read(buf);
+					while (num != -1) {
+						dout.write(buf, 0, num);
+						dout.flush();
+						num = fin.read(buf);
+					}
+					fin.close();
+					if (socketSend != null){
+						din.close();
+						dout.close();
+						socketSend.close();
+						din = null;
+						dout = null;
+						socketSend = null;
+					}
+*/					
+					new Thread(new Runnable() {
+						@Override
+						public void run() {
+							// TODO Auto-generated method stub
+							Socket socketSend = null;
+							DataOutputStream dout = null;
+							DataInputStream din = null;
+							boolean isSend = true;
+							try {
+								socketSend = new Socket(hostIP, portSend);
+								dout = new DataOutputStream(socketSend.getOutputStream());
+							} catch (Exception e) {
+								//Log.d("TAG", e.getMessage());
+								System.out.print("#Client端的socket连接失败  " + e.getMessage());
+								isSend = false;
+							}
+							
+							try {
+								File file = new File(s);
+								String head = "Length=" + file.length() + "; Name=" + file.getName() + "; Path=" + file.getPath() + ";\r\n";
+								dout.writeUTF(head);
+								onReceive(addr, "<<Begin to send the file: " + head);
+								if (!file.exists()){
+									//此处是writeTest的代码
+									try {
+										file.createNewFile();
+										String content = "Hello world!\n\nThis is a message from Client.\n\nI am happy to connect with you!\n\n*****END*****";
+										byte[] buf = new byte[1024];
+										FileOutputStream fout = new FileOutputStream(file);
+										fout.write(content.getBytes());
+										fout.close();
+									} catch (Exception e) {
+										System.out.println("#Exception in writeTest of Client: " + e.getMessage());
+									}
+								}
+	
+								FileInputStream fin = new FileInputStream(file);
+								
+								byte[] buf = new byte[1024];
+								
+								int len = 0;
+								while ((len = fin.read(buf, 0, buf.length)) > 0) {
+									dout.write(buf, 0, len);
+									dout.flush();
+								}
+								fin.close();
+								onReceive(addr, "<<Finish sending...");
+								
+								if (socketSend != null)
+									try {
+										dout.close();
+										socketSend.close();
+										dout = null;
+										socketSend = null;
+									} catch (Exception e) {
+										// TODO: handle exception
+										System.out.print("#Client端socketSend关闭失败  " + e.getMessage());
+									}
+							} catch (Exception e) {
+								System.out.println("#Client端Socketsend输出错误  " + e.getMessage());
+							}
+						}
+					}).start();
+
+					
+				}
+				
 				return true;
 			} catch (Exception e) {
+				//Log.d("TAG", e.getMessage());
 				e.printStackTrace();
 			}
 		}
 		return false;
 	}
+	
+	
 
 	/**
 	 * 监听Socket接收的数据(新线程中运行)

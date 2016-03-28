@@ -120,6 +120,6 @@
         android:id="@+id/btn_sndFile"
         android:layout_width="122dp"
         android:layout_height="wrap_content"
-        android:text="发送文件" />
+        android:text="发送文件"/>
 
 </LinearLayout>
