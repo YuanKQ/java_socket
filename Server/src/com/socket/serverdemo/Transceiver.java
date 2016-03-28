@@ -17,7 +17,7 @@ public abstract class Transceiver implements Runnable{
 	private boolean runflag;
 	private final String savePath = "D:/cache/Server/recv";
 	private final int portSend = 60000;
-	private final int portRecv = 61010;
+	private final int portRecv = 61001;
 	
 	public Transceiver(Socket socket) {
 		this.socket = socket;
@@ -99,6 +99,8 @@ public abstract class Transceiver implements Runnable{
 					DataInputStream din = null;
 					boolean isSend = true;
 					
+					Thread.sleep(100);
+					
 					//连接
 					try {
 						socketSend = new Socket(addr.getHostAddress(), portSend);
@@ -172,7 +174,8 @@ public abstract class Transceiver implements Runnable{
 				ServerSocket tmpServer = null;
 				Socket socketRecv = null;
 				DataOutputStream dout = null;
-				DataInputStream din = null;
+				DataInputStream din = null;								
+				
 				//监听端口，建立连接
 				try {
 					tmpServer = new ServerSocket(portRecv);
